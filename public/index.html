@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Udhaar — Alexa+ Simulator</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">🗣️ <span>Udhaar</span><small>Alexa+ MCP simulator</small></div>
+      <div class="settings">
+        <label>Lang
+          <select id="lang">
+            <option value="en-IN">English (en-IN)</option>
+            <option value="ta-IN">Tamil (ta-IN)</option>
+            <option value="hi-IN">Hindi (hi-IN)</option>
+          </select>
+        </label>
+        <label>Shop <input id="shopName" type="text" placeholder="Sri Shop" value="Sri Shop" /></label>
+        <label>UPI ID <input id="upiId" type="text" placeholder="shop@upi" /></label>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="conversation-panel">
+        <div id="conversation" class="conversation"></div>
+
+        <form id="askForm" class="composer">
+          <button type="button" id="micButton" class="mic-button" aria-label="Speak">🎤</button>
+          <input
+            id="textInput"
+            type="text"
+            placeholder='Try: "Ramu took 200 rupees of rice on credit"'
+            autocomplete="off"
+          />
+          <button type="submit" class="send-button">Send</button>
+        </form>
+      </section>
+
+      <aside class="ledger-panel">
+        <h2>Ledger</h2>
+        <div id="ledgerSummary" class="ledger-summary">Loading…</div>
+        <h3>Who owes money</h3>
+        <ul id="ledgerDues" class="ledger-dues"></ul>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

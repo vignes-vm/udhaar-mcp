@@ -1,0 +1,274 @@
+:root {
+  --bg: #0b0f14;
+  --panel: #121922;
+  --panel-2: #0e141b;
+  --border: #223140;
+  --text: #e7f0f7;
+  --muted: #8aa1b4;
+  --accent: #41d6a0;
+  --accent-2: #5ab4ff;
+  --danger: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-size: 1.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.brand small {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.settings {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.settings input,
+.settings select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.95rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.conversation-panel,
+.ledger-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+}
+
+.conversation {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 0.25rem;
+}
+
+.bubble {
+  max-width: 80%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 14px;
+  line-height: 1.4;
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: var(--accent-2);
+  color: #04131f;
+}
+
+.bubble.assistant {
+  align-self: flex-start;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+
+.bubble.assistant.error {
+  border-color: var(--danger);
+}
+
+.card {
+  align-self: flex-start;
+  max-width: 90%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.card .row .name {
+  font-weight: 600;
+}
+
+.card .row .amount {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.card .message {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.composer {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.composer input[type="text"] {
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  font-size: 1rem;
+}
+
+.mic-button {
+  font-size: 1.6rem;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #04131f;
+  cursor: pointer;
+}
+
+.mic-button.recording {
+  background: var(--danger);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(255, 107, 107, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+  }
+}
+
+.send-button {
+  background: var(--accent-2);
+  color: #04131f;
+  border: none;
+  border-radius: 12px;
+  padding: 0 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ledger-panel h2 {
+  margin-top: 0;
+}
+
+.ledger-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.ledger-summary .stat {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+
+.ledger-summary .stat .label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.ledger-summary .stat .value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.ledger-dues {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.ledger-dues li {
+  display: flex;
+  justify-content: space-between;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.ledger-dues li .days {
+  color: var(--muted);
+  font-size: 0.8rem;
+}

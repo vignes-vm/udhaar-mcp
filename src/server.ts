@@ -3,9 +3,13 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { addEntry, balanceOf, listDues, summaryForDay } from "./ledger.js";
 import { parseUtterance } from "./parser.js";
 import { collectionPlan } from "./planner.js";
+import { routeIntent } from "./intent.js";
 
 const app = express();
 app.use(express.json());
@@ -343,6 +347,51 @@ app.delete("/mcp", (_req, res) => {
 app.get("/health", (_req, res) => {
   res.json({ ok: true, name: "udhaar" });
 });
+
+app.get("/api/state", requireApiKey, (_req, res) => {
+  res.json({ summary: summaryForDay(), dues: listDues(0) });
+});
+
+app.post("/api/ask", requireApiKey, async (req, res) => {
+  const { utterance, shopName, upiId, language } = req.body ?? {};
+  if (typeof utterance !== "string" || !utterance.trim()) {
+    res.status(400).json({ error: "utterance is required" });
+    return;
+  }
+
+  try {
+    const route = await routeIntent(utterance);
+    const args: Record<string, unknown> = { ...route.args };
+    if (route.tool === "collection_plan") {
+      if (shopName) args.shopName = shopName;
+      if (language) args.language = language;
+    }
+
+    const headers: Record<string, string> = {};
+    const apiKey = process.env.UDHAAR_API_KEY;
+    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+    const transport = new StreamableHTTPClientTransport(new URL(`http://localhost:${port}/mcp`), {
+      requestInit: { headers },
+    });
+    const client = new Client({ name: "udhaar-web-simulator", version: "0.1.0" });
+    await client.connect(transport);
+    const result = (await client.callTool({ name: route.tool, arguments: args })) as CallToolResult;
+    await client.close();
+
+    const reply = result.content.find((block) => block.type === "text")?.text ?? "";
+    res.json({
+      tool: route.tool,
+      isError: result.isError ?? false,
+      reply,
+      structuredContent: result.structuredContent ?? null,
+    });
+  } catch (err) {
+    console.error("ask proxy failed:", err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
+app.use(express.static("public"));
 
 app.listen(port, () => {
   console.log(`udhaar-mcp listening on ${port}`);
