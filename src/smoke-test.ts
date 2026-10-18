@@ -86,6 +86,7 @@ async function run(): Promise<void> {
   assert.deepEqual(
     names,
     [
+      "collection_plan",
       "daily_summary",
       "get_balance",
       "list_dues",
@@ -150,6 +151,13 @@ async function run(): Promise<void> {
   const speechInvalid = await callTool(client, "record_from_speech", { utterance: "what a nice day" });
   assert.equal(speechInvalid.isError, true);
   console.log("record_from_speech invalid input ok");
+
+  const plan = await callTool(client, "collection_plan", { maxCustomers: 2, shopName: "Sri Shop" });
+  const planContent = plan.structuredContent as { engine: string; items: { customer: string }[] };
+  assert.equal(planContent.engine, "template");
+  assert.equal(planContent.items.length, 2);
+  assert.match(textOf(plan), /Follow up with/);
+  console.log("collection_plan ok");
 
   await client.close();
 }

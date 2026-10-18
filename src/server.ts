@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { addEntry, balanceOf, listDues, summaryForDay } from "./ledger.js";
 import { parseUtterance } from "./parser.js";
+import { collectionPlan } from "./planner.js";
 
 const app = express();
 app.use(express.json());
@@ -249,6 +250,37 @@ function buildServer(): McpServer {
       return {
         content: [{ type: "text", text: sentences.join(" ") }],
         structuredContent: { engine, entries },
+      };
+    },
+  );
+
+  server.registerTool(
+    "collection_plan",
+    {
+      title: "Collection plan",
+      description:
+        'Use when the shopkeeper asks who to follow up with, e.g. "who should I follow up with today" or ' +
+        '"give me a collection plan". Ranks customers by balance and days since last activity, and drafts a ' +
+        "polite, respectful reminder message for each one.",
+      inputSchema: {
+        maxCustomers: z.number().int().positive().optional().describe("Max customers to include, default 3"),
+        language: z.string().optional().describe("Language for drafted messages, default English"),
+        shopName: z.string().optional().describe("Shop name to sign messages with"),
+      },
+    },
+    async ({ maxCustomers, language, shopName }) => {
+      const plan = await collectionPlan(maxCustomers ?? 3, language ?? "English", shopName);
+      if (plan.items.length === 0) {
+        return {
+          content: [{ type: "text", text: "No one owes you money right now. Nothing to follow up on." }],
+          structuredContent: { ...plan },
+        };
+      }
+      const summary = `Follow up with ${plan.items.map((i) => `${i.customer} (${inr(i.balance)})`).join(", ")}.`;
+      const details = plan.items.map((i) => `For ${i.customer}: ${i.message}`).join(" ");
+      return {
+        content: [{ type: "text", text: `${summary} ${details}` }],
+        structuredContent: plan,
       };
     },
   );
