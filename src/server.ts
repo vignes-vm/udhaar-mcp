@@ -3,6 +3,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { addEntry, balanceOf, listDues, summaryForDay } from "./ledger.js";
+import { parseUtterance } from "./parser.js";
 
 const app = express();
 app.use(express.json());
@@ -202,6 +203,52 @@ function buildServer(): McpServer {
       return {
         content: [{ type: "text", text: message }],
         structuredContent: { customer: balance.displayName, balance: balance.balance, message },
+      };
+    },
+  );
+
+  server.registerTool(
+    "record_from_speech",
+    {
+      title: "Record from speech",
+      description:
+        "Use when the shopkeeper describes one or more ledger events in a single free-form spoken sentence, " +
+        'possibly mixing English with Tamil/Hindi words like udhaar/baaki/kadan, e.g. "Ramu took two fifty of ' +
+        'rice on credit and Kumar paid 500". Parses and records every entry found in the sentence.',
+      inputSchema: {
+        utterance: z.string().min(1).describe("The shopkeeper's spoken sentence"),
+      },
+    },
+    async ({ utterance }) => {
+      const { entries, engine } = await parseUtterance(utterance);
+      if (entries.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                "I couldn't understand any credit or payment in that. Try saying something like " +
+                '"Ramu took 200 rupees on credit" or "Kumar paid 500".',
+            },
+          ],
+          isError: true,
+        };
+      }
+      const sentences = entries.map((entry) => {
+        addEntry(entry.customer, entry.type, entry.amount, entry.note);
+        const balance = balanceOf(entry.customer);
+        const displayName = balance?.displayName ?? entry.customer;
+        if (entry.type === "credit") {
+          return `Recorded ${inr(entry.amount)} credit for ${displayName}.`;
+        }
+        const owed = balance?.balance ?? 0;
+        return owed <= 0
+          ? `Recorded ${inr(entry.amount)} payment from ${displayName}. Fully settled.`
+          : `Recorded ${inr(entry.amount)} payment from ${displayName}. They still owe ${inr(owed)}.`;
+      });
+      return {
+        content: [{ type: "text", text: sentences.join(" ") }],
+        structuredContent: { engine, entries },
       };
     },
   );

@@ -85,7 +85,15 @@ async function run(): Promise<void> {
   const names = tools.tools.map((t) => t.name).sort();
   assert.deepEqual(
     names,
-    ["daily_summary", "get_balance", "list_dues", "payment_reminder", "record_credit", "record_payment"].sort(),
+    [
+      "daily_summary",
+      "get_balance",
+      "list_dues",
+      "payment_reminder",
+      "record_credit",
+      "record_from_speech",
+      "record_payment",
+    ].sort(),
   );
   console.log("tools/list ok:", names.join(", "));
 
@@ -129,6 +137,19 @@ async function run(): Promise<void> {
   const invalid = await callTool(client, "record_credit", { customer: "Ramu", amount: -50 });
   assert.equal(invalid.isError, true);
   console.log("invalid input ok");
+
+  const speech = await callTool(client, "record_from_speech", {
+    utterance: "Sita took 150 rupees of oil on credit",
+  });
+  const speechContent = speech.structuredContent as { engine: string; entries: { customer: string }[] };
+  assert.equal(speechContent.engine, "rules");
+  assert.deepEqual(speechContent.entries.map((e) => e.customer), ["Sita"]);
+  assert.match(textOf(speech), /Sita/);
+  console.log("record_from_speech ok");
+
+  const speechInvalid = await callTool(client, "record_from_speech", { utterance: "what a nice day" });
+  assert.equal(speechInvalid.isError, true);
+  console.log("record_from_speech invalid input ok");
 
   await client.close();
 }
