@@ -1,4 +1,5 @@
-import express from "express";
+import { timingSafeEqual } from "node:crypto";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -293,6 +294,32 @@ const jsonRpcMethodNotAllowed = {
   error: { code: -32000, message: "Method not allowed." },
   id: null,
 };
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
+
+function requireApiKey(req: Request, res: Response, next: NextFunction): void {
+  const apiKey = process.env.UDHAAR_API_KEY;
+  if (!apiKey) {
+    next();
+    return;
+  }
+  const [scheme, token] = (req.header("authorization") ?? "").split(" ");
+  if (scheme !== "Bearer" || !token || !safeEqual(token, apiKey)) {
+    res.status(401).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Unauthorized." },
+      id: null,
+    });
+    return;
+  }
+  next();
+}
+
+app.use("/mcp", requireApiKey);
 
 app.post("/mcp", async (req, res) => {
   const server = buildServer();

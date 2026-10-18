@@ -52,6 +52,46 @@ function stopServer(): void {
   if (tempDir) rmSync(tempDir, { recursive: true, force: true });
 }
 
+async function testAuthEnforcement(): Promise<void> {
+  const authPort = port + 1;
+  const authDir = mkdtempSync(join(tmpdir(), "udhaar-smoke-auth-"));
+  const authUrl = `http://localhost:${authPort}`;
+  const secret = "test-secret-key";
+  const authServer = spawn("npx", ["tsx", "src/server.ts"], {
+    env: {
+      ...process.env,
+      PORT: String(authPort),
+      UDHAAR_DATA_FILE: join(authDir, "ledger.json"),
+      UDHAAR_DISABLE_BEDROCK: "1",
+      UDHAAR_API_KEY: secret,
+    },
+    stdio: ["ignore", "ignore", "inherit"],
+  });
+  try {
+    await waitForHealth(`${authUrl}/health`);
+
+    const unauthenticated = await fetch(`${authUrl}/mcp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    });
+    assert.equal(unauthenticated.status, 401);
+    console.log("auth: request without bearer token rejected with 401 ok");
+
+    const transport = new StreamableHTTPClientTransport(new URL(`${authUrl}/mcp`), {
+      requestInit: { headers: { Authorization: `Bearer ${secret}` } },
+    });
+    const authedClient = new Client({ name: "udhaar-smoke-test-auth", version: "0.1.0" });
+    await authedClient.connect(transport);
+    await authedClient.listTools();
+    await authedClient.close();
+    console.log("auth: request with correct bearer token accepted ok");
+  } finally {
+    authServer.kill();
+    rmSync(authDir, { recursive: true, force: true });
+  }
+}
+
 async function connectClient(): Promise<Client> {
   const headers: Record<string, string> = {};
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
@@ -160,6 +200,8 @@ async function run(): Promise<void> {
   console.log("collection_plan ok");
 
   await client.close();
+
+  if (ownsServer) await testAuthEnforcement();
 }
 
 try {
